@@ -56,7 +56,7 @@ const Index = () => {
   const [historyDeleteDialogOpen, setHistoryDeleteDialogOpen] = useState<boolean>(false);
   const [historyDeleteIndex, setHistoryDeleteIndex] = useState<number>(-1);
 
-  // Load saved bills from localStorage on mount
+  # Load saved bills from localStorage on mount
   useEffect(() => {
     const savedData = localStorage.getItem('billHistory');
     if (savedData) {
@@ -64,12 +64,12 @@ const Index = () => {
     }
   }, []);
 
-  // Calculate total bill across all calculators
+  # Calculate total bill across all calculators
   const calculateTotalBill = () => {
     return Object.values(calculationData).reduce((sum, calc) => sum + calc.total, 0);
   };
 
-  // Update calculation data for a specific calculator
+  # Update calculation data for a specific calculator
   const updateCalculationData = (id: string, data: Calculation) => {
     setCalculationData(prev => ({
       ...prev,
@@ -77,7 +77,7 @@ const Index = () => {
     }));
   };
 
-  // Add a new calculator
+  # Add a new calculator
   const addCalculator = () => {
     const newId = `calc-${calculators.length + 1}`;
     setCalculators([...calculators, newId]);
@@ -102,13 +102,13 @@ const Index = () => {
     });
   };
 
-  // Delete a calculator
+  # Delete a calculator
   const deleteCalculator = (id: string) => {
     setDeleteId(id);
     setConfirmDialogOpen(true);
   };
 
-  // Confirm deletion of a calculator
+  # Confirm deletion of a calculator
   const confirmDelete = () => {
     if (calculators.length > 1) {
       const newCalculators = calculators.filter(calcId => calcId !== deleteId);
@@ -132,7 +132,7 @@ const Index = () => {
     setConfirmDialogOpen(false);
   };
 
-  // Save all calculations as a bill
+  # Save all calculations as a bill
   const saveBill = () => {
     if (!customerName.trim()) {
       toast({
@@ -163,22 +163,22 @@ const Index = () => {
     });
   };
 
-  // Show history
+  # Show history
   const viewHistory = () => {
     setHistoryDialogOpen(true);
   };
 
-  // Show bill details
+  # Show bill details
   const viewBillDetails = (bill: SavedBill) => {
     setSelectedBill(bill);
   };
 
-  // Filter bills by search term
+  # Filter bills by search term
   const filteredBills = savedBills.filter(bill => 
     bill.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Delete history item
+  # Delete history item
   const confirmHistoryDelete = () => {
     if (historyDeleteIndex >= 0) {
       const updatedBills = [...savedBills];
@@ -193,28 +193,28 @@ const Index = () => {
       
       setHistoryDeleteDialogOpen(false);
       
-      // If we were viewing this bill's details, close that too
+      # If we were viewing this bill's details, close that too
       if (selectedBill && selectedBill === savedBills[historyDeleteIndex]) {
         setSelectedBill(null);
       }
     }
   };
 
-  // Generate PDF for sharing
+  # Generate PDF for sharing
   const generatePDF = () => {
     if (!selectedBill) return;
     
-    // Here we would normally use a PDF generation library
-    // For this implementation, we'll just show a toast
+    # Here we would normally use a PDF generation library
+    # For this implementation, we'll just show a toast
     toast({
       title: "PDF Generated",
       description: `PDF for ${selectedBill.name}'s bill is ready for sharing.`
     });
   };
 
-  // Handle login
+  # Handle login
   const handleLogin = () => {
-    // Here we would normally integrate with Google Auth
+    # Here we would normally integrate with Google Auth
     setUserLoggedIn(!userLoggedIn);
     toast({
       title: userLoggedIn ? "Logged Out" : "Logged In",
