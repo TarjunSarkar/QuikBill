@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Billing Calculator</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --danger-color: #ea4335;
+            --warning-color: #fbbc05;
+            --light-gray: #f5f5f5;
+            --border-color: #ddd;
+            --text-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: white;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .ad-space {
+            flex: 0 0 200px;
+            padding: 20px;
+            background-color: var(--light-gray);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .ad-space.right {
+            order: 2;
+        }
+
+        .ad-space.left {
+            order: 0;
+        }
+
+        .ad-placeholder {
+            width: 160px;
+            height: 600px;
+            margin-bottom: 20px;
+            background-color: #eee;
+            border: 1px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .main-content {
+            flex: 1;
+            order: 1;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .calculator-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .customer-name {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .customer-name h2 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .calculator {
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .calculator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calculator-title {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .delete-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .delete-btn:hover {
+            opacity: 0.9;
+        }
+
+        .product-section {
+            margin-bottom: 15px;
+        }
+
+        .product-section h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            min-width: 120px;
+        }
+
+        input, select {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+
+        .unit-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .unit-container select {
+            width: 120px;
+        }
+
+        .unit-container input {
+            width: 80px;
+        }
+
+        .gst-container {
+            position: relative;
+        }
+
+        .gst-percent {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            color: var(--text-color);
+        }
+
+        .apply-all {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .apply-all input {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .apply-all label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+
+        .total-amount {
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .total-bill {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: right;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+        }
+
+        .history-container {
+            display: none;
+            margin-top: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-container input {
+            flex: 1;
+        }
+
+        .date-search {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .date-search input {
+            width: 150px;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background-color: var(--light-gray);
+        }
+
+        .history-item-info {
+            flex: 1;
+        }
+
+        .history-item-name {
+            font-weight: bold;
+        }
+
+        .history-item-date {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .history-item-delete {
+            color: var(--danger-color);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+
+        .modal-close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .bill-details {
+            margin-bottom: 30px;
+        }
+
+        .bill-header {
+            margin-bottom: 20px;
+        }
+
+        .bill-shop-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .bill-customer-name {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .bill-date {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .bill-item {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .bill-product-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .bill-amount, .bill-gst, .bill-transport {
+            margin-bottom: 5px;
+        }
+
+        .bill-subtotal {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .bill-total {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .confirmation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .confirmation-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .confirmation-text {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .confirmation-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .ad-space-bottom {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: var(--light-gray);
+        }
+
+        .ad-placeholder-bottom {
+            width: 728px;
+            height: 90px;
+            background-color: #eee;
+            border: 1px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1100;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background-color: var(--secondary-color);
+        }
+
+        .toast.warning {
+            background-color: var(--warning-color);
+            color: var(--text-color);
+        }
+
+        .toast.danger {
+            background-color: var(--danger-color);
+        }
+
+        .undo-btn {
+            margin-left: 15px;
+            padding: 2px 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .undo-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .ad-space {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .unit-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .unit-container select, .unit-container input {
+                width: 100%;
+            }
+            
+            .actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .search-container, .date-search {
+                flex-direction: column;
+            }
+            
+            .date-search input {
+                width: 100%;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .toast {
+                width: calc(100% - 40px);
+                right: 20px;
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="ad-space left">
+            <div class="ad-placeholder">Ad Space</div>
+            <div class="ad-placeholder">Ad Space</div>
+        </div>
+        
+        <div class="main-content">
+            <header>
+                <h1>Billing Calculator</h1>
+            </header>
+            
+            <div class="login-container">
+                <div id="g_id_onload"
+                    data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                    data-login_uri="https://your.domain/oauth2callback"
+                    data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin"
+                    data-type="standard"
+                    data-size="large"
+                    data-theme="outline"
+                    data-text="sign_in_with"
+                    data-shape="rectangular"
+                    data-logo_alignment="left">
+                </div>
+            </div>
+            
+            <div class="calculator-container">
+                <div class="customer-name">
+                    <h2>Customer Name:</h2>
+                    <input type="text" id="customer-name" placeholder="Enter customer name" required>
+                </div>
+                
+                <div id="calculators-container">
+                    <!-- Calculators will be added here dynamically -->
+                </div>
+                
+                <div class="actions">
+                    <button id="add-calculator" class="btn btn-primary">Add Item</button>
+                    <button id="save-bill" class="btn btn-secondary">Save Bill</button>
+                    <button id="history-btn" class="btn">History</button>
+                    <button id="print-btn" class="btn">Print</button>
+                </div>
+                
+                <div class="total-bill">
+                    Total Bill: ₹<span id="grand-total">0.00</span>
+                </div>
+            </div>
+            
+            <div class="history-container" id="history-container">
+                <div class="history-header">
+                    <h2>Calculation History</h2>
+                    <button id="close-history" class="btn btn-danger">Close</button>
+                </div>
+                
+                <div class="search-container">
+                    <input type="text" id="history-search" placeholder="Search by customer name">
+                </div>
+                
+                <div class="date-search">
+                    <input type="date" id="history-date-from" placeholder="From date">
+                    <input type="date" id="history-date-to" placeholder="To date">
+                    <button id="date-search-btn" class="btn btn-primary">Search</button>
+                </div>
+                
+                <div class="history-list" id="history-list">
+                    <!-- History items will be added here dynamically -->
+                </div>
+            </div>
+            
+            <div class="ad-space-bottom">
+                <div class="ad-placeholder-bottom">Horizontal Ad Space</div>
+            </div>
+        </div>
+        
+        <div class="ad-space right">
+            <div class="ad-placeholder">Ad Space</div>
+            <div class="ad-placeholder">Ad Space</div>
+        </div>
+    </div>
+    
+    <!-- Bill Details Modal -->
+    <div class="modal" id="bill-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Bill Details</h2>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="bill-details" id="bill-details">
+                <!-- Bill details will be added here dynamically -->
+            </div>
+            <div class="modal-actions">
+                <button id="download-pdf" class="btn btn-primary">Download PDF</button>
+                <button id="share-email" class="btn btn-secondary">Share via Email</button>
+                <button id="print-bill" class="btn">Print</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="confirmation-modal" id="confirmation-modal">
+        <div class="confirmation-content">
+            <p class="confirmation-text">Are you sure you want to delete this item?</p>
+            <div class="confirmation-actions">
+                <button id="confirm-delete" class="btn btn-danger">Yes, Delete</button>
+                <button id="cancel-delete" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Global variables
+            let calculators = [];
+            let currentCalculatorId = 0;
+            let history = JSON.parse(localStorage.getItem('billingHistory')) || [];
+            let deleteTarget = null;
+            let currentBillDetails = null;
+            let deletedHistoryItem = null;
+            let undoTimeout = null;
+            
+            // Unit options
+            const unitOptions = [
+                'KG', 'QUINTAL', 'TON', 'LITER', 'HECTOLITER', 
+                'KILOLITER', 'DRUM', 'BOX', 'PIECE'
+            ];
+            
+            // Initialize the first calculator
+            addCalculator();
+            
+            // Event listeners
+            document.getElementById('add-calculator').addEventListener('click', addCalculator);
+            document.getElementById('save-bill').addEventListener('click', saveBill);
+            document.getElementById('history-btn').addEventListener('click', toggleHistory);
+            document.getElementById('close-history').addEventListener('click', toggleHistory);
+            document.getElementById('print-btn').addEventListener('click', printCurrentBill);
+            document.getElementById('history-search').addEventListener('input', filterHistory);
+            document.getElementById('date-search-btn').addEventListener('click', filterByDate);
+            document.querySelector('.modal-close').addEventListener('click', closeModal);
+            document.getElementById('download-pdf').addEventListener('click', downloadPDF);
+            document.getElementById('share-email').addEventListener('click', shareViaEmail);
+            document.getElementById('print-bill').addEventListener('click', printBillDetails);
+            document.getElementById('confirm-delete').addEventListener('click', confirmDelete);
+            document.getElementById('cancel-delete').addEventListener('click', cancelDelete);
+            
+            // Load history on page load
+            loadHistory();
+            
+            // Function to show toast notification
+            function showToast(message, type = 'info', duration = 3000) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = 'toast';
+                toast.classList.add(type);
+                
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 100);
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            }
+            
+            // Function to add a new calculator
+            function addCalculator() {
+                const calculatorId = currentCalculatorId++;
+                const calculator = document.createElement('div');
+                calculator.className = 'calculator';
+                calculator.dataset.id = calculatorId;
+                
+                const isFirstCalculator = calculators.length === 0;
+                
+                calculator.innerHTML = `
+                    <div class="calculator-header">
+                        <div class="calculator-title">Product Details</div>
+                        ${!isFirstCalculator ? '<button class="delete-btn">Delete</button>' : ''}
+                    </div>
+                    <div class="product-section">
+                        <h3>Product Name</h3>
+                        <input type="text" id="product-name-${calculatorId}" class="product-name" placeholder="Enter product name">
+                    </div>
+                    <div class="form-group">
+                        <label for="amount-${calculatorId}">Amount</label>
+                        <div class="unit-container">
+                            <input type="number" id="amount-${calculatorId}" class="amount" placeholder="0" value="0" min="0">
+                            <span>/</span>
+                            <select id="amount-unit-${calculatorId}" class="amount-unit">
+                                ${unitOptions.map(unit => `<option value="${unit}">${unit}</option>`).join('')}
+                            </select>
+                            <span>-</span>
+                            <input type="number" id="amount-quantity-${calculatorId}" class="amount-quantity" placeholder="Qty" value="1" min="1">
+                            <span>= ₹<span class="amount-total">0.00</span></span>
+                        </div>
+                    </div>
+                    <div class="form-group gst-container">
+                        <label for="gst-${calculatorId}">GST</label>
+                        <div class="unit-container">
+                            <input type="number" id="gst-${calculatorId}" class="gst" placeholder="0" value="0" min="0" max="100">
+                            <span>% = ₹<span class="gst-total">0.00</span></span>
+                        </div>
+                        ${isFirstCalculator ? `
+                        <div class="apply-all">
+                            <input type="checkbox" id="apply-gst-all">
+                            <label for="apply-gst-all">Apply to all items</label>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="form-group">
+                        <label for="transport-${calculatorId}">Transport</label>
+                        <div class="unit-container">
+                            <input type="number" id="transport-${calculatorId}" class="transport" placeholder="0" value="0" min="0">
+                            <span>/</span>
+                            <select id="transport-unit-${calculatorId}" class="transport-unit">
+                                ${unitOptions.map(unit => `<option value="${unit}">${unit}</option>`).join('')}
+                            </select>
+                            <span>-</span>
+                            <input type="number" id="transport-quantity-${calculatorId}" class="transport-quantity" placeholder="Qty" value="1" min="1">
+                            <span>= ₹<span class="transport-total">0.00</span></span>
+                        </div>
+                        ${isFirstCalculator ? `
+                        <div class="apply-all">
+                            <input type="checkbox" id="apply-transport-all">
+                            <label for="apply-transport-all">Apply to all items</label>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="total-amount">
+                        <span>Totals:</span>
+                        <span>₹<span class="calculator-total" id="calculator-total-${calculatorId}">0.00</span></span>
+                    </div>
+                `;
+                
+                document.getElementById('calculators-container').appendChild(calculator);
+                calculators.push(calculatorId);
+                
+                // Add event listeners for the new calculator
+                addCalculatorEventListeners(calculatorId);
+                
+                // Focus on the first field of the new calculator
+                if (!isFirstCalculator) {
+                    document.getElementById(`product-name-${calculatorId}`).focus();
+                    showToast('New item added', 'success');
+                }
+                
+                // Add delete button event listener if not the first calculator
+                if (!isFirstCalculator) {
+                    calculator.querySelector('.delete-btn').addEventListener('click', function() {
+                        showDeleteConfirmation(calculatorId);
+                    });
+                }
+                
+                // Add apply to all event listeners for the first calculator
+                if (isFirstCalculator) {
+                    document.getElementById('apply-gst-all').addEventListener('change', function(e) {
+                        if (e.target.checked) {
+                            applyGstToAll();
+                            showToast('GST applied to all items', 'info');
+                        }
+                    });
+                    
+                    document.getElementById('apply-transport-all').addEventListener('change', function(e) {
+                        if (e.target.checked) {
+                            applyTransportToAll();
+                            showToast('Transport applied to all items', 'info');
+                        }
+                    });
+                }
+            }
+            
+            // Function to add event listeners to a calculator
+            function addCalculatorEventListeners(calculatorId) {
+                const amountInput = document.getElementById(`amount-${calculatorId}`);
+                const amountUnit = document.getElementById(`amount-unit-${calculatorId}`);
+                const amountQuantity = document.getElementById(`amount-quantity-${calculatorId}`);
+                const gstInput = document.getElementById(`gst-${calculatorId}`);
+                const transportInput = document.getElementById(`transport-${calculatorId}`);
+                const transportUnit = document.getElementById(`transport-unit-${calculatorId}`);
+                const transportQuantity = document.getElementById(`transport-quantity-${calculatorId}`);
+                
+                // Calculate total when any input changes
+                [amountInput, amountUnit, amountQuantity, gstInput, transportInput, transportUnit, transportQuantity].forEach(element => {
+                    element.addEventListener('input', function() {
+                        calculateTotal(calculatorId);
+                        updateGrandTotal();
+                    });
+                });
+                
+                // Clear initial zero when user starts typing
+                [amountInput, gstInput, transportInput].forEach(input => {
+                    input.addEventListener('focus', function() {
+                        if (parseFloat(this.value) === 0) {
+                            this.value = '';
+                        }
+                    });
+                    
+                    input.addEventListener('blur', function() {
+                        if (this.value === '') {
+                            this.value = '0';
+                            calculateTotal(calculatorId);
+                            updateGrandTotal();
+                        }
+                    });
+                });
+                
+                // Keyboard navigation
+                setupKeyboardNavigation(calculatorId);
+            }
+            
+            // Function to setup keyboard navigation
+            function setupKeyboardNavigation(calculatorId) {
+                const fields = [
+                    `product-name-${calculatorId}`,
+                    `amount-${calculatorId}`,
+                    `amount-unit-${calculatorId}`,
+                    `amount-quantity-${calculatorId}`,
+                    `gst-${calculatorId}`,
+                    `transport-${calculatorId}`,
+                    `transport-unit-${calculatorId}`,
+                    `transport-quantity-${calculatorId}`
+                ];
+                
+                fields.forEach((fieldId, index) => {
+                    const field = document.getElementById(fieldId);
+                    
+                    field.addEventListener('keydown', function(e) {
+                        // Handle Enter key
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            
+                            // If this is a select element, open the dropdown
+                            if (field.tagName === 'SELECT') {
+                                if (field.size <= 1) {
+                                    field.size = unitOptions.length + 1; // Show all options
+                                    field.focus();
+                                } else {
+                                    field.size = 1;
+                                }
+                                return;
+                            }
+                            
+                            // Move to next field
+                            const nextIndex = index + 1;
+                            if (nextIndex < fields.length) {
+                                document.getElementById(fields[nextIndex]).focus();
+                            } else {
+                                // If this is the last field, move to next calculator or add new one
+                                const nextCalculatorIndex = calculators.indexOf(calculatorId) + 1;
+                                if (nextCalculatorIndex < calculators.length) {
+                                    document.getElementById(`product-name-${calculators[nextCalculatorIndex]}`).focus();
+                                } else {
+                                    addCalculator();
+                                }
+                            }
+                        }
+                        
+                        // Handle Arrow Down
+                        if (e.key === 'ArrowDown') {
+                            if (field.tagName === 'SELECT' && field.size > 1) {
+                                // Navigate through select options
+                                e.preventDefault();
+                                const selectedIndex = field.selectedIndex;
+                                if (selectedIndex < field.options.length - 1) {
+                                    field.selectedIndex = selectedIndex + 1;
+                                    calculateTotal(calculatorId);
+                                    updateGrandTotal();
+                                }
+                            } else {
+                                // Move to next field
+                                e.preventDefault();
+                                const nextIndex = index + 1;
+                                if (nextIndex < fields.length) {
+                                    document.getElementById(fields[nextIndex]).focus();
+                                }
+                            }
+                        }
+                        
+                        // Handle Arrow Up
+                        if (e.key === 'ArrowUp') {
+                            if (field.tagName === 'SELECT' && field.size > 1) {
+                                // Navigate through select options
+                                e.preventDefault();
+                                const selectedIndex = field.selectedIndex;
+                                if (selectedIndex > 0) {
+                                    field.selectedIndex = selectedIndex - 1;
+                                    calculateTotal(calculatorId);
+                                    updateGrandTotal();
+                                }
+                            } else {
+                                // Move to previous field
+                                e.preventDefault();
+                                const prevIndex = index - 1;
+                                if (prevIndex >= 0) {
+                                    document.getElementById(fields[prevIndex]).focus();
+                                }
+                            }
+                        }
+                        
+                        // Handle Escape key for select elements
+                        if (e.key === 'Escape' && field.tagName === 'SELECT' && field.size > 1) {
+                            e.preventDefault();
+                            field.size = 1;
+                        }
+                    });
+                    
+                    // For select elements, close dropdown when selection is made
+                    if (field.tagName === 'SELECT') {
+                        field.addEventListener('change', function() {
+                            this.size = 1;
+                            calculateTotal(calculatorId);
+                            updateGrandTotal();
+                        });
+                        
+                        field.addEventListener('blur', function() {
+                            setTimeout(() => {
+                                this.size = 1;
+                            }, 200);
+                        });
+                    }
+                });
+            }
+            
+            // Function to calculate total for a single calculator
+            function calculateTotal(calculatorId) {
+                const amount = parseFloat(document.getElementById(`amount-${calculatorId}`).value) || 0;
+                const quantity = parseFloat(document.getElementById(`amount-quantity-${calculatorId}`).value) || 1;
+                const gst = parseFloat(document.getElementById(`gst-${calculatorId}`).value) || 0;
+                const transport = parseFloat(document.getElementById(`transport-${calculatorId}`).value) || 0;
+                const transportQuantity = parseFloat(document.getElementById(`transport-quantity-${calculatorId}`).value) || 1;
+                
+                const amountTotal = amount * quantity;
+                const gstAmount = amountTotal * (gst / 100);
+                const transportTotal = transport * transportQuantity;
+                
+                const total = amountTotal + gstAmount + transportTotal;
+                
+                // Update all totals display
+                document.querySelector(`#amount-${calculatorId}`).parentNode.querySelector('.amount-total').textContent = amountTotal.toFixed(2);
+                document.querySelector(`#gst-${calculatorId}`).parentNode.querySelector('.gst-total').textContent = gstAmount.toFixed(2);
+                document.querySelector(`#transport-${calculatorId}`).parentNode.querySelector('.transport-total').textContent = transportTotal.toFixed(2);
+                document.getElementById(`calculator-total-${calculatorId}`).textContent = total.toFixed(2);
+            }
+            
+            // Function to update the grand total
+            function updateGrandTotal() {
+                let grandTotal = 0;
+                
+                calculators.forEach(calculatorId => {
+                    const totalText = document.getElementById(`calculator-total-${calculatorId}`).textContent;
+                    grandTotal += parseFloat(totalText) || 0;
+                });
+                
+                document.getElementById('grand-total').textContent = grandTotal.toFixed(2);
+            }
+            
+            // Function to apply GST to all calculators
+            function applyGstToAll() {
+                const firstGst = parseFloat(document.getElementById(`gst-${calculators[0]}`).value) || 0;
+                
+                calculators.slice(1).forEach(calculatorId => {
+                    document.getElementById(`gst-${calculatorId}`).value = firstGst;
+                    calculateTotal(calculatorId);
+                });
+                
+                updateGrandTotal();
+            }
+            
+            // Function to apply transport to all calculators
+            function applyTransportToAll() {
+                const firstTransport = parseFloat(document.getElementById(`transport-${calculators[0]}`).value) || 0;
+                const firstTransportUnit = document.getElementById(`transport-unit-${calculators[0]}`).value;
+                const firstTransportQuantity = parseFloat(document.getElementById(`transport-quantity-${calculators[0]}`).value) || 1;
+                
+                calculators.slice(1).forEach(calculatorId => {
+                    document.getElementById(`transport-${calculatorId}`).value = firstTransport;
+                    document.getElementById(`transport-unit-${calculatorId}`).value = firstTransportUnit;
+                    document.getElementById(`transport-quantity-${calculatorId}`).value = firstTransportQuantity;
+                    calculateTotal(calculatorId);
+                });
+                
+                updateGrandTotal();
+            }
+            
+            // Function to show delete confirmation
+            function showDeleteConfirmation(calculatorId) {
+                deleteTarget = calculatorId;
+                document.getElementById('confirmation-modal').style.display = 'flex';
+            }
+            
+            // Function to confirm delete
+            function confirmDelete() {
+                if (deleteTarget !== null) {
+                    const calculatorIndex = calculators.indexOf(deleteTarget);
+                    if (calculatorIndex > 0) { // Don't allow deleting the first calculator
+                        const calculatorElement = document.querySelector(`.calculator[data-id="${deleteTarget}"]`);
+                        calculatorElement.remove();
+                        calculators = calculators.filter(id => id !== deleteTarget);
+                        updateCalculatorTitles();
+                        updateGrandTotal();
+                        showToast('Item deleted', 'danger');
+                    }
+                }
+                deleteTarget = null;
+                document.getElementById('confirmation-modal').style.display = 'none';
+            }
+            
+            // Function to cancel delete
+            function cancelDelete() {
+                deleteTarget = null;
+                document.getElementById('confirmation-modal').style.display = 'none';
+            }
+            
+            // Function to update calculator titles after deletion
+            function updateCalculatorTitles() {
+                calculators.forEach((calculatorId, index) => {
+                    const titleElement = document.querySelector(`.calculator[data-id="${calculatorId}"] .calculator-title`);
+                    if (titleElement) {
+                        titleElement.textContent = index === 0 ? 'Product Details' : `Product Details ${index + 1}`;
+                    }
+                });
+            }
+            
+            // Function to save the current bill
+            function saveBill() {
+                const customerName = document.getElementById('customer-name').value.trim();
+                const shopName = document.getElementById('shop-name')?.value.trim();
+                
+                if (!customerName) {
+                    alert('Please enter customer name');
+                    document.getElementById('customer-name').focus();
+                    return;
+                }
+                
+                const billItems = [];
+                
+                calculators.forEach(calculatorId => {
+                    const productName = document.getElementById(`product-name-${calculatorId}`).value.trim();
+                    const amount = parseFloat(document.getElementById(`amount-${calculatorId}`).value) || 0;
+                    const amountUnit = document.getElementById(`amount-unit-${calculatorId}`).value;
+                    const amountQuantity = parseFloat(document.getElementById(`amount-quantity-${calculatorId}`).value) || 1;
+                    const gst = parseFloat(document.getElementById(`gst-${calculatorId}`).value) || 0;
+                    const transport = parseFloat(document.getElementById(`transport-${calculatorId}`).value) || 0;
+                    const transportUnit = document.getElementById(`transport-unit-${calculatorId}`).value;
+                    const transportQuantity = parseFloat(document.getElementById(`transport-quantity-${calculatorId}`).value) || 1;
+                    const total = parseFloat(document.getElementById(`calculator-total-${calculatorId}`).textContent) || 0;
+                    
+                    billItems.push({
+                        productName,
+                        amount,
+                        amountUnit,
+                        amountQuantity,
+                        gst,
+                        transport,
+                        transportUnit,
+                        transportQuantity,
+                        total
+                    });
+                });
+                
+                const grandTotal = parseFloat(document.getElementById('grand-total').textContent) || 0;
+                const now = new Date();
+                const dateTime = now.toLocaleString();
+                
+                const bill = {
+                    shopName,
+                    customerName,
+                    dateTime,
+                    timestamp: now.getTime(),
+                    items: billItems,
+                    grandTotal
+                };
+                
+                // Save to history
+                history.push(bill);
+                localStorage.setItem('billingHistory', JSON.stringify(history));
+                
+                // Reset the form
+                resetCalculator();
+                
+                // Update history display
+                loadHistory();
+                
+                showToast('Bill saved successfully!', 'success');
+            }
+            
+            // Function to reset the calculator
+            function resetCalculator() {
+                // Remove all calculators except the first one
+                while (calculators.length > 1) {
+                    const calculatorId = calculators.pop();
+                    const calculatorElement = document.querySelector(`.calculator[data-id="${calculatorId}"]`);
+                    calculatorElement.remove();
+                }
+                
+                // Reset the first calculator
+                const firstCalculatorId = calculators[0];
+                document.getElementById(`product-name-${firstCalculatorId}`).value = '';
+                document.getElementById(`amount-${firstCalculatorId}`).value = '0';
+                document.getElementById(`amount-unit-${firstCalculatorId}`).selectedIndex = 0;
+                document.getElementById(`amount-quantity-${firstCalculatorId}`).value = '1';
+                document.getElementById(`gst-${firstCalculatorId}`).value = '0';
+                document.getElementById(`transport-${firstCalculatorId}`).value = '0';
+                document.getElementById(`transport-unit-${firstCalculatorId}`).selectedIndex = 0;
+                document.getElementById(`transport-quantity-${firstCalculatorId}`).value = '1';
+                document.getElementById(`calculator-total-${firstCalculatorId}`).textContent = '0.00';
+                
+                // Reset totals display
+                document.querySelector(`#amount-${firstCalculatorId}`).parentNode.querySelector('.amount-total').textContent = '0.00';
+                document.querySelector(`#gst-${firstCalculatorId}`).parentNode.querySelector('.gst-total').textContent = '0.00';
+                document.querySelector(`#transport-${firstCalculatorId}`).parentNode.querySelector('.transport-total').textContent = '0.00';
+                
+                // Reset apply to all checkboxes
+                if (document.getElementById('apply-gst-all')) {
+                    document.getElementById('apply-gst-all').checked = false;
+                }
+                if (document.getElementById('apply-transport-all')) {
+                    document.getElementById('apply-transport-all').checked = false;
+                }
+                
+                // Reset customer name and shop name
+                document.getElementById('customer-name').value = '';
+                if (document.getElementById('shop-name')) {
+                    document.getElementById('shop-name').value = '';
+                }
+                
+                // Reset grand total
+                document.getElementById('grand-total').textContent = '0.00';
+                
+                // Focus on customer name field
+                document.getElementById('customer-name').focus();
+            }
+            
+            // Function to toggle history display
+            function toggleHistory() {
+                const historyContainer = document.getElementById('history-container');
+                const calculatorContainer = document.querySelector('.calculator-container');
+                
+                if (historyContainer.style.display === 'block') {
+                    historyContainer.style.display = 'none';
+                    calculatorContainer.style.display = 'block';
+                } else {
+                    historyContainer.style.display = 'block';
+                    calculatorContainer.style.display = 'none';
+                    document.getElementById('history-search').focus();
+                }
+            }
+            
+            // Function to load history
+            function loadHistory() {
+                const historyList = document.getElementById('history-list');
+                historyList.innerHTML = '';
+                
+                // Sort history by timestamp (newest first)
+                history.sort((a, b) => b.timestamp - a.timestamp);
+                
+                history.forEach((bill, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.dataset.index = index;
+                    
+                    historyItem.innerHTML = `
+                        <div class="history-item-info">
+                            <div class="history-item-name">${bill.customerName}</div>
+                            <div class="history-item-date">${bill.dateTime}</div>
+                        </div>
+                        <div class="history-item-delete">✕</div>
+                    `;
+                    
+                    historyItem.addEventListener('click', function(e) {
+                        if (!e.target.classList.contains('history-item-delete')) {
+                            showBillDetails(index);
+                        }
+                    });
+                    
+                    historyItem.querySelector('.history-item-delete').addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        deleteHistoryItem(index);
+                    });
+                    
+                    historyList.appendChild(historyItem);
+                });
+            }
+            
+            // Function to filter history by search term
+            function filterHistory() {
+                const searchTerm = document.getElementById('history-search').value.toLowerCase();
+                const historyItems = document.querySelectorAll('.history-item');
+                
+                historyItems.forEach(item => {
+                    const customerName = item.querySelector('.history-item-name').textContent.toLowerCase();
+                    const date = item.querySelector('.history-item-date').textContent.toLowerCase();
+                    
+                    if (customerName.includes(searchTerm) || date.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Function to filter history by date range
+            function filterByDate() {
+                const fromDate = document.getElementById('history-date-from').value;
+                const toDate = document.getElementById('history-date-to').value;
+                const historyItems = document.querySelectorAll('.history-item');
+                
+                if (!fromDate && !toDate) {
+                    historyItems.forEach(item => {
+                        item.style.display = 'flex';
+                    });
+                    return;
+                }
+                
+                const fromTimestamp = fromDate ? new Date(fromDate).getTime() : 0;
+                const toTimestamp = toDate ? new Date(toDate + 'T23:59:59').getTime() : Date.now();
+                
+                history.forEach((bill, index) => {
+                    const item = historyItems[index];
+                    const billTimestamp = bill.timestamp;
+                    
+                    if (billTimestamp >= fromTimestamp && billTimestamp <= toTimestamp) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Function to delete history item
+            function deleteHistoryItem(index) {
+                deletedHistoryItem = history[index];
+                const deletedIndex = index;
+                
+                history.splice(index, 1);
+                localStorage.setItem('billingHistory', JSON.stringify(history));
+                loadHistory();
+                
+                // Show undo option
+                const toast = document.getElementById('toast');
+                toast.innerHTML = `History item deleted <span class="undo-btn">UNDO</span>`;
+                toast.className = 'toast warning';
+                toast.classList.add('show');
+                
+                // Add undo event listener
+                const undoBtn = toast.querySelector('.undo-btn');
+                undoBtn.addEventListener('click', function() {
+                    history.splice(deletedIndex, 0, deletedHistoryItem);
+                    localStorage.setItem('billingHistory', JSON.stringify(history));
+                    loadHistory();
+                    toast.classList.remove('show');
+                    clearTimeout(undoTimeout);
+                    showToast('History item restored', 'success');
+                });
+                
+                // Set timeout to remove undo option
+                if (undoTimeout) clearTimeout(undoTimeout);
+                undoTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                    deletedHistoryItem = null;
+                }, 10000);
+            }
+            
+            // Function to show bill details
+            function showBillDetails(index) {
+                const bill = history[index];
+                currentBillDetails = bill;
+                
+                const billDetails = document.getElementById('bill-details');
+                billDetails.innerHTML = '';
+                
+                // Add shop name if available
+                if (bill.shopName) {
+                    const shopNameElement = document.createElement('div');
+                    shopNameElement.className = 'bill-shop-name';
+                    shopNameElement.textContent = bill.shopName;
+                    billDetails.appendChild(shopNameElement);
+                }
+                
+                // Add customer name
+                const customerNameElement = document.createElement('div');
+                customerNameElement.className = 'bill-customer-name';
+                customerNameElement.textContent = bill.customerName + "'s Bill";
+                billDetails.appendChild(customerNameElement);
+                
+                // Add date
+                const dateElement = document.createElement('div');
+                dateElement.className = 'bill-date';
+                dateElement.textContent = 'Date: ' + bill.dateTime;
+                billDetails.appendChild(dateElement);
+                
+                // Add items
+                bill.items.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'bill-item';
+                    
+                    // Product name
+                    const productNameElement = document.createElement('div');
+                    productNameElement.className = 'bill-product-name';
+                    productNameElement.textContent = item.productName;
+                    itemElement.appendChild(productNameElement);
+                    
+                    // Amount
+                    const amountElement = document.createElement('div');
+                    amountElement.className = 'bill-amount';
+                    amountElement.textContent = `Amount: ${item.amount} / ${item.amountUnit} × ${item.amountQuantity} = ₹${(item.amount * item.amountQuantity).toFixed(2)}`;
+                    itemElement.appendChild(amountElement);
+                    
+                    // GST
+                    const gstElement = document.createElement('div');
+                    gstElement.className = 'bill-gst';
+                    gstElement.textContent = `GST: ${item.gst}% = ₹${(item.amount * item.amountQuantity * (item.gst / 100)).toFixed(2)}`;
+                    itemElement.appendChild(gstElement);
+                    
+                    // Transport
+                    if (item.transport > 0) {
+                        const transportElement = document.createElement('div');
+                        transportElement.className = 'bill-transport';
+                        transportElement.textContent = `Transport: ${item.transport} / ${item.transportUnit} × ${item.transportQuantity} = ₹${(item.transport * item.transportQuantity).toFixed(2)}`;
+                        itemElement.appendChild(transportElement);
+                    }
+                    
+                    // Subtotal
+                    const subtotalElement = document.createElement('div');
+                    subtotalElement.className = 'bill-subtotal';
+                    subtotalElement.textContent = `Subtotal: ₹${item.total.toFixed(2)}`;
+                    itemElement.appendChild(subtotalElement);
+                    
+                    billDetails.appendChild(itemElement);
+                });
+                
+                // Add grand total
+                const totalElement = document.createElement('div');
+                totalElement.className = 'bill-total';
+                totalElement.textContent = `Total Amount: ₹${bill.grandTotal.toFixed(2)}`;
+                billDetails.appendChild(totalElement);
+                
+                // Show modal
+                document.getElementById('bill-modal').style.display = 'flex';
+            }
+            
+            // Function to close modal
+            function closeModal() {
+                document.getElementById('bill-modal').style.display = 'none';
+            }
+            
+            // Function to download PDF
+            function downloadPDF() {
+                if (!currentBillDetails) return;
+                
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // Add shop name if available
+                    if (currentBillDetails.shopName) {
+                        doc.setFontSize(16);
+                        doc.text(currentBillDetails.shopName, 10, 15);
+                    }
+                    
+                    // Add customer name
+                    doc.setFontSize(14);
+                    doc.text(currentBillDetails.customerName + "'s Bill", 10, 25);
+                    
+                    // Add date
+                    doc.setFontSize(12);
+                    doc.text('Date: ' + currentBillDetails.dateTime, 10, 35);
+                    
+                    let yPosition = 45;
+                    
+                    // Add items
+                    currentBillDetails.items.forEach(item => {
+                        doc.setFontSize(12);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(item.productName, 10, yPosition);
+                        doc.setFont('helvetica', 'normal');
+                        
+                        yPosition += 7;
+                        doc.text(`Amount: ${item.amount} / ${item.amountUnit} × ${item.amountQuantity} = ₹${(item.amount * item.amountQuantity).toFixed(2)}`, 10, yPosition);
+                        
+                        yPosition += 7;
+                        doc.text(`GST: ${item.gst}% = ₹${(item.amount * item.amountQuantity * (item.gst / 100)).toFixed(2)}`, 10, yPosition);
+                        
+                        if (item.transport > 0) {
+                            yPosition += 7;
+                            doc.text(`Transport: ${item.transport} / ${item.transportUnit} × ${item.transportQuantity} = ₹${(item.transport * item.transportQuantity).toFixed(2)}`, 10, yPosition);
+                        }
+                        
+                        yPosition += 7;
+                        doc.text(`Subtotal: ₹${item.total.toFixed(2)}`, 10, yPosition);
+                        
+                        yPosition += 10; // Extra space between items
+                    });
+                    
+                    // Add grand total
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`Total Amount: ₹${currentBillDetails.grandTotal.toFixed(2)}`, 10, yPosition);
+                    
+                    // Save the PDF
+                    doc.save(`${currentBillDetails.customerName}_Bill_${new Date().toISOString().slice(0, 10)}.pdf`);
+                    showToast('PDF downloaded successfully', 'success');
+                } catch (error) {
+                    console.error('PDF generation error:', error);
+                    showToast('Failed to generate PDF', 'danger');
+                }
+            }
+            
+            // Function to share via email
+            function shareViaEmail() {
+                if (!currentBillDetails) return;
+                
+                let emailBody = '';
+                
+                if (currentBillDetails.shopName) {
+                    emailBody += `${currentBillDetails.shopName}\n\n`;
+                }
+                
+                emailBody += `${currentBillDetails.customerName}'s Bill\n`;
+                emailBody += `Date: ${currentBillDetails.dateTime}\n\n`;
+                
+                currentBillDetails.items.forEach(item => {
+                    emailBody += `${item.productName}\n`;
+                    emailBody += `Amount: ${item.amount} / ${item.amountUnit} × ${item.amountQuantity} = ₹${(item.amount * item.amountQuantity).toFixed(2)}\n`;
+                    emailBody += `GST: ${item.gst}% = ₹${(item.amount * item.amountQuantity * (item.gst / 100)).toFixed(2)}\n`;
+                    
+                    if (item.transport > 0) {
+                        emailBody += `Transport: ${item.transport} / ${item.transportUnit} × ${item.transportQuantity} = ₹${(item.transport * item.transportQuantity).toFixed(2)}\n`;
+                    }
+                    
+                    emailBody += `Subtotal: ₹${item.total.toFixed(2)}\n\n`;
+                });
+                
+                emailBody += `Total Amount: ₹${currentBillDetails.grandTotal.toFixed(2)}`;
+                
+                const subject = `Bill for ${currentBillDetails.customerName}`;
+                const encodedSubject = encodeURIComponent(subject);
+                const encodedBody = encodeURIComponent(emailBody);
+                
+                window.open(`mailto:?subject=${encodedSubject}&body=${encodedBody}`, '_blank');
+            }
+            
+            // Function to print bill details
+            function printBillDetails() {
+                const printContent = document.getElementById('bill-details').innerHTML;
+                const originalContent = document.body.innerHTML;
+                
+                document.body.innerHTML = `
+                    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+                        ${printContent}
+                    </div>
+                `;
+                
+                window.print();
+                document.body.innerHTML = originalContent;
+                loadHistory();
+            }
+            
+            // Function to print current bill
+            function printCurrentBill() {
+                const customerName = document.getElementById('customer-name').value.trim();
+                const shopName = document.getElementById('shop-name')?.value.trim();
+                
+                if (!customerName) {
+                    alert('Please enter customer name');
+                    document.getElementById('customer-name').focus();
+                    return;
+                }
+                
+                let printContent = '';
+                
+                if (shopName) {
+                    printContent += `<div style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">${shopName}</div>`;
+                }
+                
+                printContent += `<div style="font-size: 18px; margin-bottom: 10px;">${customerName}'s Bill</div>`;
+                printContent += `<div style="color: #666; margin-bottom: 20px;">Date: ${new Date().toLocaleString()}</div>`;
+                
+                calculators.forEach(calculatorId => {
+                    const productName = document.getElementById(`product-name-${calculatorId}`).value.trim();
+                    const amount = parseFloat(document.getElementById(`amount-${calculatorId}`).value) || 0;
+                    const amountUnit = document.getElementById(`amount-unit-${calculatorId}`).value;
+                    const amountQuantity = parseFloat(document.getElementById(`amount-quantity-${calculatorId}`).value) || 1;
+                    const gst = parseFloat(document.getElementById(`gst-${calculatorId}`).value) || 0;
+                    const transport = parseFloat(document.getElementById(`transport-${calculatorId}`).value) || 0;
+                    const transportUnit = document.getElementById(`transport-unit-${calculatorId}`).value;
+                    const transportQuantity = parseFloat(document.getElementById(`transport-quantity-${calculatorId}`).value) || 1;
+                    const total = parseFloat(document.getElementById(`calculator-total-${calculatorId}`).textContent) || 0;
+                    
+                    if (productName || amount > 0) {
+                        printContent += `<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #ddd;">`;
+                        
+                        if (productName) {
+                            printContent += `<div style="font-weight: bold; margin-bottom: 5px;">${productName}</div>`;
+                        }
+                        
+                        printContent += `<div style="margin-bottom: 5px;">Amount: ${amount} / ${amountUnit} × ${amountQuantity} = ₹${(amount * amountQuantity).toFixed(2)}</div>`;
+                        printContent += `<div style="margin-bottom: 5px;">GST: ${gst}% = ₹${(amount * amountQuantity * (gst / 100)).toFixed(2)}</div>`;
+                        
+                        if (transport > 0) {
+                            printContent += `<div style="margin-bottom: 5px;">Transport: ${transport} / ${transportUnit} × ${transportQuantity} = ₹${(transport * transportQuantity).toFixed(2)}</div>`;
+                        }
+                        
+                        printContent += `<div style="font-weight: bold; margin-top: 10px;">Subtotal: ₹${total.toFixed(2)}</div>`;
+                        printContent += `</div>`;
+                    }
+                });
+                
+                const grandTotal = parseFloat(document.getElementById('grand-total').textContent) || 0;
+                printContent += `<div style="font-size: 22px; font-weight: bold; text-align: right; margin-top: 20px; padding-top: 15px; border-top: 2px solid #ddd;">Total Amount: ₹${grandTotal.toFixed(2)}</div>`;
+                
+                const originalContent = document.body.innerHTML;
+                
+                document.body.innerHTML = `
+                    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+                        ${printContent}
+                    </div>
+                `;
+                
+                window.print();
+                document.body.innerHTML = originalContent;
+            }
+        });
+    </script>
+</body>
+</html>
